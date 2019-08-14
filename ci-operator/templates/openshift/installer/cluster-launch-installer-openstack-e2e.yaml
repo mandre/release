@@ -79,9 +79,6 @@ objects:
       secret:
         secretName: ${JOB_NAME_SAFE}-cluster-profile
     dnsPolicy: "None"
-    dnsConfig:
-      nameservers:
-        - ${CI_DNS_IP}
     containers:
 
     # Once the cluster is up, executes shared tests
@@ -256,6 +253,10 @@ objects:
         mkdir -p ~/.ssh
         cp "${SSH_PRIV_KEY_PATH}" ~/.ssh/id_rsa
         chmod 0600 ~/.ssh/id_rsa
+
+        # Forward DNS queries to $CI_DNS_IP
+        # sshuttle --dns -N --daemon -r core@${CI_DNS_IP}
+        sudo sshuttle --dns -e 'ssh -i /output/.ssh/id_rsa -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --python /usr/libexec/platform-python -r core@${CI_DNS_IP} 192.168.3.0/24
 
         # create a new floating ip tagged with CLUSTER_NAME so it can be deleted later
         LB_FIP=$(openstack floating ip create --description $CLUSTER_NAME $OPENSTACK_EXTERNAL_NETWORK --format value -c 'floating_ip_address')
